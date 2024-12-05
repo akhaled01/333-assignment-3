@@ -4,5 +4,5 @@ This assignment is a data visualization assignment using the fetch API. This pro
 
 ## Authors
 
-Abdulrahman Khaled Idrees - 202200729
-Wejdan abdulla - 20175004
+- Abdulrahman Khaled Idrees - 202200729
+- Wejdan abdulla - 20175004
