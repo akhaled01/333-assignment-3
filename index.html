@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Enrollment Statistics</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <style>
+        .container {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .stats-header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        .loading {
+            text-align: center;
+            padding: 2rem;
+        }
+        .error {
+            color: #ff4444;
+            text-align: center;
+            padding: 1rem;
+            background: #ffeeee;
+            border-radius: 4px;
+        }
+        table {
+            margin-top: 1rem;
+        }
+        th {
+            background-color: #1095c1;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa52;
+        }
+        .summary {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #f8f9fa52;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <div class="stats-header">
+            <h1>College of IT Student Enrollment Statistics</h1>
+            <p>Data from Bahrain Open Data Portal</p>
+        </div>
+        
+        <div id="loading" class="loading">Loading data...</div>
+        <div id="error" class="error" style="display: none;"></div>
+        <div id="content" style="display: none;">
+            <table role="grid">
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Semester</th>
+                        <th>Program</th>
+                        <th>Nationality</th>
+                        <th>College</th>
+                        <th>Students</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+            <div class="summary" id="summary"></div>
+        </div>
+    </main>
+
+    <script>
+        async function fetchData() {
+            try {
+                const response = await fetch('https://data.gov.bh/api/explore/v2.1/catalog/datasets/01-statistics-of-students-nationalities_updated/records?where=colleges%20like%20%22IT%22%20AND%20the_programs%20like%20%22bachelor%22&limit=100');
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch data: ' + response.statusText);
+                }
+
+                const data = await response.json();
+                return data.results;
+            } catch (error) {
+                throw new Error('Failed to fetch data: ' + error.message);
+            }
+        }
+
+        function displayData(data) {
+            const tableBody = document.getElementById('tableBody');
+            const summaryDiv = document.getElementById('summary');
+            
+            // Clear existing content
+            tableBody.innerHTML = '';
+            
+            // Sort data by year and semester
+            data.sort((a, b) => {
+                if (a.year !== b.year) return a.year.localeCompare(b.year);
+                const semesterOrder = {
+                    'First Semester': 1,
+                    'Second Semester': 2,
+                    'Summer Semester': 3
+                };
+                return semesterOrder[a.semester] - semesterOrder[b.semester];
+            });
+
+            // Display data in table
+            data.forEach(record => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${record.year}</td>
+                    <td>${record.semester}</td>
+                    <td>${record.the_programs}</td>
+                    <td>${record.nationality}</td>
+                    <td>${record.colleges}</td>
+                    <td>${record.number_of_students}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            // Calculate and display summary
+            const totalStudents = data.reduce((sum, record) => sum + record.number_of_students, 0);
+            const uniqueYears = [...new Set(data.map(record => record.year))];
+            const uniqueNationalities = [...new Set(data.map(record => record.nationality))];
+
+            summaryDiv.innerHTML = `
+                <h3>Summary Statistics</h3>
+                <p>Total Students: ${totalStudents}</p>
+                <p>Academic Years: ${uniqueYears.join(', ')}</p>
+                <p>Nationalities: ${uniqueNationalities.join(', ')}</p>
+            `;
+        }
+
+        // Main execution
+        document.addEventListener('DOMContentLoaded', async () => {
+            const loadingDiv = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const contentDiv = document.getElementById('content');
+
+            try {
+                const data = await fetchData();
+                loadingDiv.style.display = 'none';
+                contentDiv.style.display = 'block';
+                displayData(data);
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = error.message;
+            }
+        });
+    </script>
+</body>
+</html>
